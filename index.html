@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Speed Detection | Real Motion Tracking</title>
+    <meta name="description" content="Real AI-powered Object Speed Detection using OpenCV.js and TensorFlow.js.">
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Particle Background -->
+    <canvas id="particles-bg"></canvas>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <span class="neon-text-cyan">SPEED</span><span class="neon-text-purple">AI</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#home" class="active">HOME</a></li>
+            <li><a href="#live-camera">TRACKING</a></li>
+            <li><a href="#features">FEATURES</a></li>
+        </ul>
+        <div class="nav-status">
+            <span class="status-indicator offline" id="nav-camera-status"></span>
+            <span id="sys-status-text">SYSTEM_OFFLINE</span>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="glitch" data-text="AI SPEED TRACKER">AI SPEED TRACKER</h1>
+            <p>Real motion tracking and velocity calculations using advanced Computer Vision and Edge AI.</p>
+            <div class="hero-actions">
+                <button class="cyber-btn primary-btn"
+                    onclick="document.getElementById('live-camera').scrollIntoView()">INITIATE SYSTEM</button>
+            </div>
+        </div>
+        <div class="hero-graphics">
+            <div class="radar-container">
+                <div class="radar-grid"></div>
+                <div class="radar-sweep"></div>
+                <div class="blip1"></div>
+                <div class="blip2"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Detection Dashboard -->
+    <section id="live-camera" class="dashboard">
+        <div class="section-header">
+            <h2 class="section-title">LIVE HUD <span class="blink neon-text-cyan">●</span></h2>
+            <div class="tech-lines"></div>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Camera & HUD Feed -->
+            <div class="camera-wrapper glass-panel">
+                <div class="hud-overlay">
+                    <div class="hud-corner top-left"></div>
+                    <div class="hud-corner top-right"></div>
+                    <div class="hud-corner bottom-left"></div>
+                    <div class="hud-corner bottom-right"></div>
+
+                    <div class="hud-crosshair"></div>
+
+                    <div class="hud-stats-top">
+                        <div class="stat"><span class="label">FPS:</span> <span id="fps-counter"
+                                class="value neon-text-green">00</span></div>
+                        <div class="stat"><span class="label">AI CONF:</span> <span id="confidence-meter"
+                                class="value neon-text-cyan">0%</span></div>
+                        <div class="stat"><span class="label">CV MODE:</span> <span id="cv-status"
+                                class="value">AWAITING</span></div>
+                    </div>
+
+                    <div class="hud-recording blink hidden" id="rec-indicator">REC</div>
+                </div>
+
+                <div class="video-container">
+                    <video id="videoElement" autoplay playsinline muted></video>
+                    <!-- We use two canvases: one for hidden processing, one for displaying tracking lines -->
+                    <canvas id="processingCanvas" class="hidden"></canvas>
+                    <canvas id="trackingCanvas"></canvas>
+                </div>
+
+                <div class="loading-overlay" id="camera-loading">
+                    <div class="cyber-spinner"></div>
+                    <p id="loading-text">LOADING AI MODELS...</p>
+                </div>
+            </div>
+
+            <!-- Controls & Results -->
+            <div class="controls-panel glass-panel">
+
+                <div class="control-group">
+                    <h3 class="panel-title">TRACKING TARGET</h3>
+                    <div class="mode-btns">
+                        <button class="mode-btn active" data-mode="generic">GENERIC</button>
+                        <button class="mode-btn" data-mode="cricket">CRICKET</button>
+                        <button class="mode-btn" data-mode="vehicle">VEHICLE</button>
+                    </div>
+                </div>
+
+                <div class="control-group calibration-group">
+                    <h3 class="panel-title">CALIBRATION (FOV WIDTH)</h3>
+                    <p class="calib-desc">Enter estimated physical width visible in camera frame to calculate true
+                        speed.</p>
+                    <div class="calib-inputs">
+                        <input type="number" id="fov-width" value="10" min="0.1" step="0.5">
+                        <span class="unit-label">Meters</span>
+                    </div>
+                </div>
+
+                <div class="control-group speed-display-group">
+                    <div class="speed-header">
+                        <h3 class="panel-title">DETECTED VELOCITY</h3>
+                        <span id="detected-type" class="neon-text-purple">SCANNING...</span>
+                    </div>
+
+                    <div class="speed-display">
+                        <div class="speed-value glitch-text" id="current-speed">000</div>
+                        <div class="speed-units">
+                            <button class="unit-btn active" data-unit="kmh">KM/H</button>
+                            <button class="unit-btn" data-unit="mph">MPH</button>
+                            <button class="unit-btn" data-unit="ms">M/S</button>
+                        </div>
+                    </div>
+                    <!-- Speed Bar -->
+                    <div class="speed-meter-container">
+                        <div class="speed-meter-bar" id="speed-bar"></div>
+                    </div>
+
+                    <div class="extra-stats">
+                        <div class="stat-box">
+                            <span>AVG SPEED</span>
+                            <strong id="avg-speed" class="neon-text-cyan">000</strong>
+                        </div>
+                        <div class="stat-box">
+                            <span>TOP SPEED</span>
+                            <strong id="top-speed" class="neon-text-green">000</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group action-buttons">
+                    <button id="start-btn" class="cyber-btn outline-btn" disabled>
+                        <span class="btn-icon">▶</span> INITIALIZING...
+                    </button>
+                    <button id="stop-btn" class="cyber-btn danger-btn hidden">
+                        <span class="btn-icon">■</span> STOP OPTICS
+                    </button>
+                    <button id="capture-btn" class="cyber-btn secondary-btn" disabled>
+                        <span class="btn-icon">⛶</span> CAPTURE LOG
+                    </button>
+                </div>
+
+                <div class="control-group history-panel">
+                    <div class="history-header">
+                        <h3 class="panel-title">SYS_LOG</h3>
+                        <button id="export-log" class="small-btn neon-text-green">EXPORT</button>
+                        <button id="clear-log" class="small-btn">CLEAR</button>
+                    </div>
+                    <ul id="speed-history" class="history-list">
+                        <li class="history-empty">No data available</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <h2 class="section-title">SYSTEM CAPABILITIES</h2>
+        <div class="features-grid">
+            <div class="feature-card glass-panel">
+                <div class="feature-icon neon-text-cyan">👁️</div>
+                <h3>OPENCV MOTION TRACKING</h3>
+                <p>Frame-differencing algorithms detect raw pixel movement for blazing fast, high-velocity small
+                    objects.</p>
+            </div>
+            <div class="feature-card glass-panel">
+                <div class="feature-icon neon-text-purple">🧠</div>
+                <h3>TENSORFLOW CLASSIFICATION</h3>
+                <p>COCO-SSD Neural Network identifies whether the moving object is a car, person, sports ball, or truck.
+                </p>
+            </div>
+            <div class="feature-card glass-panel">
+                <div class="feature-icon neon-text-green">📐</div>
+                <h3>REAL PHYSICS ENGINE</h3>
+                <p>Calculates exact velocity based on your Field-of-View (FOV) meter calibration and real frame delta
+                    times.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="tech-lines"></div>
+        <p>SPEEDAI PRO SYSTEM © 2026 | <span class="neon-text-cyan">SECURE CONNECTION</span></p>
+    </footer>
+
+    <!-- Audio Effects -->
+    <audio id="beep-sound"
+        src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"
+        preload="auto"></audio>
+
+    <!-- External Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script async src="https://docs.opencv.org/4.8.0/opencv.js" id="opencv-script" type="text/javascript"></script>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
